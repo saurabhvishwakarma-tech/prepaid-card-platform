@@ -1,0 +1,22 @@
+# Build output
+target/
+out/
+
+# IDE
+.idea/
+*.iml
+
+# Secrets and local config
+.env
+*.pem
+*.key
+keys/
+
+# Logs
+logs/
+*.log
+
+# Tooling
+cdk.out/
+node_modules/
+.DS_Store
