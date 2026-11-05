@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package cardplatform.common.v1;
+
+option java_package = "com.cardplatform.contracts.common.v1";
+option java_multiple_files = true;
+option java_outer_classname = "MoneyProto";
+
+// Minor units (cents) as an integer: floating point cannot represent money exactly.
+message Money {
+  int64 amount_minor = 1;
+  // ISO 4217 code, for example "EUR"
+  string currency = 2;
+}

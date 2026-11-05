@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package cardplatform.common.v1;
+
+option java_package = "com.cardplatform.contracts.common.v1";
+option java_multiple_files = true;
+option java_outer_classname = "MerchantProto";
+
+message Merchant {
+  string merchant_id = 1;
+  string name = 2;
+  // ISO 18245 merchant category code, as sent by card networks, for example "5411"
+  string mcc = 3;
+  // ISO 3166-1 alpha-2, for example "IE"
+  string country = 4;
+}
+
+// Derived from the MCC by core. Card controls block on it, and history and rewards group by it.
+enum MerchantCategory {
+  MERCHANT_CATEGORY_UNSPECIFIED = 0;
+  MERCHANT_CATEGORY_GROCERIES = 1;
+  MERCHANT_CATEGORY_RESTAURANTS = 2;
+  MERCHANT_CATEGORY_TRANSPORT = 3;
+  MERCHANT_CATEGORY_TRAVEL = 4;
+  MERCHANT_CATEGORY_ENTERTAINMENT = 5;
+  MERCHANT_CATEGORY_RETAIL = 6;
+  MERCHANT_CATEGORY_DIGITAL_SERVICES = 7;
+  MERCHANT_CATEGORY_GAMBLING = 8;
+  MERCHANT_CATEGORY_OTHER = 9;
+}

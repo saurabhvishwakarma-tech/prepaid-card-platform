@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package cardplatform.network.v1;
+
+import "cardplatform/common/v1/money.proto";
+import "cardplatform/common/v1/merchant.proto";
+import "cardplatform/common/v1/decline_reason.proto";
+
+option java_package = "com.cardplatform.contracts.network.v1";
+option java_multiple_files = true;
+option java_outer_classname = "CardNetworkProto";
+
+// Called by the card network (our simulator) on the issuer (core).
+// Every request carries an ID chosen by the network, so a retried call is answered
+// with the stored result instead of being processed twice.
+service CardNetworkService {
+  rpc Authorize(AuthorizeRequest) returns (AuthorizeResponse);
+  rpc Clear(ClearRequest) returns (ClearResponse);
+  rpc Reverse(ReverseRequest) returns (ReverseResponse);
+  rpc Refund(RefundRequest) returns (RefundResponse);
+}
+
+message AuthorizeRequest {
+  string network_txn_id = 1;
+  // Full card number: never log this message as a whole
+  string pan = 2;
+  int32 expiry_month = 3;
+  int32 expiry_year = 4;
+  cardplatform.common.v1.Money amount = 5;
+  cardplatform.common.v1.Merchant merchant = 6;
+}
+
+message AuthorizeResponse {
+  string network_txn_id = 1;
+  AuthorizationDecision decision = 2;
+  // Set only when approved
+  string auth_code = 3;
+  // Set only when declined
+  cardplatform.common.v1.DeclineReason decline_reason = 4;
+}
+
+enum AuthorizationDecision {
+  AUTHORIZATION_DECISION_UNSPECIFIED = 0;
+  AUTHORIZATION_DECISION_APPROVED = 1;
+  AUTHORIZATION_DECISION_DECLINED = 2;
+}
+
+// Captures an approved authorisation. The amount may be lower than authorised
+// (the rest of the hold is released) but never higher.
+message ClearRequest {
+  string clearing_id = 1;
+  string network_txn_id = 2;
+  cardplatform.common.v1.Money amount = 3;
+}
+
+message ClearResponse {
+  string clearing_id = 1;
+  ProcessingResult result = 2;
+  RejectReason reject_reason = 3;
+}
+
+// Cancels an authorisation that has not been cleared; releases the whole hold.
+message ReverseRequest {
+  string reversal_id = 1;
+  string network_txn_id = 2;
+}
+
+message ReverseResponse {
+  string reversal_id = 1;
+  ProcessingResult result = 2;
+  RejectReason reject_reason = 3;
+}
+
+// Returns money for a cleared transaction; may be partial.
+message RefundRequest {
+  string refund_id = 1;
+  string network_txn_id = 2;
+  cardplatform.common.v1.Money amount = 3;
+}
+
+message RefundResponse {
+  string refund_id = 1;
+  ProcessingResult result = 2;
+  RejectReason reject_reason = 3;
+}
+
+enum ProcessingResult {
+  PROCESSING_RESULT_UNSPECIFIED = 0;
+  PROCESSING_RESULT_ACCEPTED = 1;
+  PROCESSING_RESULT_REJECTED = 2;
+}
+
+enum RejectReason {
+  REJECT_REASON_UNSPECIFIED = 0;
+  REJECT_REASON_AUTHORIZATION_NOT_FOUND = 1;
+  // For example clearing a reversed authorisation, or refunding one never cleared
+  REJECT_REASON_INVALID_STATE = 2;
+  REJECT_REASON_AMOUNT_EXCEEDS_ALLOWED = 3;
+  REJECT_REASON_CURRENCY_MISMATCH = 4;
+}

@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package cardplatform.events.v1;
+
+import "cardplatform/common/v1/money.proto";
+import "cardplatform/common/v1/event_metadata.proto";
+
+option java_package = "com.cardplatform.contracts.events.v1";
+option java_multiple_files = true;
+option java_outer_classname = "LedgerEventsProto";
+
+// Topic: ledger.postings, key: account_id.
+// Describes the customer's side of one journal entry.
+message LedgerPostingEvent {
+  cardplatform.common.v1.EventMetadata metadata = 1;
+  string account_id = 2;
+  string journal_entry_id = 3;
+  EntryType entry_type = 4;
+  PostingDirection direction = 5;
+  // Always positive; direction says which way the money moved
+  cardplatform.common.v1.Money amount = 6;
+  cardplatform.common.v1.Money ledger_balance_after = 7;
+  cardplatform.common.v1.Money available_balance_after = 8;
+  // Business ID that caused the entry: a top-up ID, network_txn_id or refund ID
+  string reference = 9;
+}
+
+enum EntryType {
+  ENTRY_TYPE_UNSPECIFIED = 0;
+  ENTRY_TYPE_TOP_UP = 1;
+  ENTRY_TYPE_CARD_CAPTURE = 2;
+  ENTRY_TYPE_CARD_REFUND = 3;
+}
+
+enum PostingDirection {
+  POSTING_DIRECTION_UNSPECIFIED = 0;
+  POSTING_DIRECTION_CREDIT = 1;
+  POSTING_DIRECTION_DEBIT = 2;
+}

@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package cardplatform.events.v1;
+
+import "cardplatform/common/v1/event_metadata.proto";
+
+option java_package = "com.cardplatform.contracts.events.v1";
+option java_multiple_files = true;
+option java_outer_classname = "CardEventsProto";
+
+// Topic: card.lifecycle, key: card_id.
+message CardLifecycleEvent {
+  cardplatform.common.v1.EventMetadata metadata = 1;
+  string card_id = 2;
+  string account_id = 3;
+  string user_id = 4;
+  // Only the masked part of the PAN ever leaves the card module
+  string last_four = 5;
+
+  oneof event {
+    CardIssued issued = 10;
+    CardFrozen frozen = 11;
+    CardUnfrozen unfrozen = 12;
+    CardCancelled cancelled = 13;
+  }
+}
+
+message CardIssued {
+  int32 expiry_month = 1;
+  int32 expiry_year = 2;
+}
+
+message CardFrozen {}
+
+message CardUnfrozen {}
+
+message CardCancelled {}

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package cardplatform.events.v1;
+
+import "cardplatform/common/v1/event_metadata.proto";
+
+option java_package = "com.cardplatform.contracts.events.v1";
+option java_multiple_files = true;
+option java_outer_classname = "IdentityEventsProto";
+
+// Topic: identity.events, key: user_id.
+// Carries no personal data (no email or name): consumers only need to know
+// what happened to which user.
+message IdentityEvent {
+  cardplatform.common.v1.EventMetadata metadata = 1;
+  string user_id = 2;
+
+  oneof event {
+    UserRegistered registered = 10;
+    KycVerified kyc_verified = 11;
+    UserLoggedIn logged_in = 12;
+  }
+}
+
+message UserRegistered {}
+
+message KycVerified {}
+
+message UserLoggedIn {}

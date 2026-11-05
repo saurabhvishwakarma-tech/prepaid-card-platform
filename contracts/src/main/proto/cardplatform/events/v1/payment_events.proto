@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package cardplatform.events.v1;
+
+import "cardplatform/common/v1/money.proto";
+import "cardplatform/common/v1/merchant.proto";
+import "cardplatform/common/v1/event_metadata.proto";
+import "cardplatform/common/v1/decline_reason.proto";
+
+option java_package = "com.cardplatform.contracts.events.v1";
+option java_multiple_files = true;
+option java_outer_classname = "PaymentEventsProto";
+
+// Topic: payments.events, key: account_id.
+// One envelope per topic; the oneof says which event it is. A new event type is
+// a new oneof field, which old consumers skip.
+// Declines for unknown cards are not published: there is no account to inform.
+message PaymentEvent {
+  cardplatform.common.v1.EventMetadata metadata = 1;
+  string account_id = 2;
+  string card_id = 3;
+  string network_txn_id = 4;
+  cardplatform.common.v1.Merchant merchant = 5;
+  cardplatform.common.v1.MerchantCategory category = 6;
+
+  oneof event {
+    PaymentAuthorized authorized = 10;
+    PaymentDeclined declined = 11;
+    PaymentCleared cleared = 12;
+    PaymentReversed reversed = 13;
+    PaymentRefunded refunded = 14;
+  }
+}
+
+message PaymentAuthorized {
+  cardplatform.common.v1.Money amount = 1;
+  string auth_code = 2;
+}
+
+message PaymentDeclined {
+  cardplatform.common.v1.Money amount = 1;
+  cardplatform.common.v1.DeclineReason reason = 2;
+}
+
+message PaymentCleared {
+  string clearing_id = 1;
+  cardplatform.common.v1.Money cleared_amount = 2;
+  // Part of the hold given back because clearing was lower than authorised
+  cardplatform.common.v1.Money released_amount = 3;
+}
+
+message PaymentReversed {
+  string reversal_id = 1;
+  cardplatform.common.v1.Money released_amount = 2;
+}
+
+message PaymentRefunded {
+  string refund_id = 1;
+  cardplatform.common.v1.Money amount = 2;
+}

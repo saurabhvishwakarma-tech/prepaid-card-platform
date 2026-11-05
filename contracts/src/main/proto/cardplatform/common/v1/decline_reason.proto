@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package cardplatform.common.v1;
+
+option java_package = "com.cardplatform.contracts.common.v1";
+option java_multiple_files = true;
+option java_outer_classname = "DeclineReasonProto";
+
+// Shared by the network API response and the PaymentDeclined event.
+enum DeclineReason {
+  DECLINE_REASON_UNSPECIFIED = 0;
+  DECLINE_REASON_INSUFFICIENT_FUNDS = 1;
+  DECLINE_REASON_CARD_NOT_FOUND = 2;
+  DECLINE_REASON_CARD_NOT_ACTIVE = 3;
+  DECLINE_REASON_CARD_EXPIRED = 4;
+  DECLINE_REASON_TRANSACTION_LIMIT_EXCEEDED = 5;
+  DECLINE_REASON_MERCHANT_CATEGORY_BLOCKED = 6;
+  DECLINE_REASON_CURRENCY_NOT_SUPPORTED = 7;
+}

@@ -15,3 +15,9 @@ Kafka and Redis came up fine but Postgres failed with "An attempt was made to ac
 `netstat -ano | grep ':5432'` showed something already listening on 5432 (PID 7520), and `tasklist //FI "PID eq 7520"` showed it was `postgres.exe` running as a Windows service. I had a Postgres installed directly on Windows from before, set to start automatically on boot, and I'd forgotten about it. Windows reports a port held by another process this way.
 
 I mapped the container to host port 5433 instead (`127.0.0.1:5433:5432`). Other containers still connect to `postgres:5432`; only tools on my machine use `localhost:5433`. I also set the Windows Postgres service to Manual so it no longer starts on its own. I kept 5433 even after stopping the service, so the project works whether that service is running or not.
+
+## Protobuf plugin found no sources
+
+The first contracts build failed with "No protobuf sources found". The plugin only looks in `contracts/src/main/proto/`, and I had created the `.proto` files in a `common/v1` folder at the repo root instead. Running `find contracts -type f` showed the real layout straight away. I moved each file into `contracts/src/main/proto/cardplatform/<common|network|events>/v1/` and the build passed.
+
+Lesson: when a build tool says it found nothing, check where the files actually are before touching the config.
