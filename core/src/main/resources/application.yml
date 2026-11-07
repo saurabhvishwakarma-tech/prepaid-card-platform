@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: card-platform-core
+  config:
+    # Reads CORE_DB_PASSWORD from the repo's .env when run from core/
+    import: optional:file:../.env[.properties]
+  datasource:
+    url: jdbc:postgresql://localhost:5433/core_db
+    username: core_user
+    password: ${CORE_DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+server:
+  port: 8081
+
+cardplatform:
+  jwt:
+    issuer: card-platform-core
+    access-token-ttl: 15m
+    private-key-location: file:../keys/jwt-private.pem
+    public-key-location: file:../keys/jwt-public.pem

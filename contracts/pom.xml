@@ -5,16 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <!-- Boot's parent keeps protoc, protoc-gen-grpc-java and the gRPC/Protobuf runtime on aligned versions -->
+    <!-- Root pom inherits Spring Boot's parent, which keeps protoc and the gRPC/Protobuf runtime aligned -->
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.1.2</version>
-        <relativePath/>
+        <groupId>com.cardplatform</groupId>
+        <artifactId>prepaid-card-platform</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>com.cardplatform</groupId>
     <artifactId>contracts</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
     <name>contracts</name>
     <description>Protobuf contracts: card network gRPC API and Kafka event schemas</description>
 
