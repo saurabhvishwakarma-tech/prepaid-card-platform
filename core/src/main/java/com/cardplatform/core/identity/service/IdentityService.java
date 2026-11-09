@@ -16,6 +16,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.cardplatform.core.identity.api.UserRegisteredEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -30,15 +32,18 @@ public class IdentityService implements IdentityApi {
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final UserMapper userMapper;
+    private final ApplicationEventPublisher events;
     // Checked when the email is unknown, so a failed login costs the same time either way
     private final String dummyPasswordHash;
 
     public IdentityService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                           TokenService tokenService, UserMapper userMapper) {
+                           TokenService tokenService, UserMapper userMapper,
+                           ApplicationEventPublisher events) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
         this.userMapper = userMapper;
+        this.events = events;
         this.dummyPasswordHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
@@ -55,6 +60,7 @@ public class IdentityService implements IdentityApi {
             // Two sign-ups with the same email at once: the unique constraint stops the second
             throw new EmailAlreadyRegisteredException();
         }
+        events.publishEvent(new UserRegisteredEvent(user.getId()));
         log.info("User registered: userId={}", user.getId());
         return user;
     }
