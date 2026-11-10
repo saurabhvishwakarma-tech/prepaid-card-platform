@@ -22,3 +22,9 @@ cardplatform:
     access-token-ttl: 15m
     private-key-location: file:../keys/jwt-private.pem
     public-key-location: file:../keys/jwt-public.pem
+  card:
+    # Six-digit issuer prefix in the 9 range, which no real card network uses
+    bin: "990001"
+    pan-encryption-key: ${CARD_PAN_ENCRYPTION_KEY}
+    pan-hash-key: ${CARD_PAN_HASH_KEY}
+    cvv-key: ${CARD_CVV_KEY}

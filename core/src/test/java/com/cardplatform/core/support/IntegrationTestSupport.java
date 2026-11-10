@@ -1,5 +1,5 @@
 package com.cardplatform.core.support;
-
+import java.security.SecureRandom;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +32,11 @@ public abstract class IntegrationTestSupport {
 
     protected static final String PASSWORD = "correct-horse-battery";
 
+    // Generated once per run: the card keys must stay the same for the whole test context
+    private static final String PAN_ENCRYPTION_KEY = randomKey();
+    private static final String PAN_HASH_KEY = randomKey();
+    private static final String CVV_KEY = randomKey();
+
     // One container for the whole test run; every test class shares it and the same Spring context
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18");
 
@@ -54,6 +59,25 @@ public abstract class IntegrationTestSupport {
         Path publicKey = writePem(dir.resolve("public.pem"), "PUBLIC KEY", keyPair.getPublic().getEncoded());
         registry.add("cardplatform.jwt.private-key-location", () -> privateKey.toUri().toString());
         registry.add("cardplatform.jwt.public-key-location", () -> publicKey.toUri().toString());
+
+        registry.add("cardplatform.card.pan-encryption-key", () -> PAN_ENCRYPTION_KEY);
+        registry.add("cardplatform.card.pan-hash-key", () -> PAN_HASH_KEY);
+        registry.add("cardplatform.card.cvv-key", () -> CVV_KEY);
+    }
+
+    protected String verifiedCustomerToken() throws Exception {
+        String email = uniqueEmail();
+        mockMvc.perform(register(email, PASSWORD)).andExpect(status().isCreated());
+        String token = loginAndGetToken(email);
+        mockMvc.perform(post("/api/core/users/me/kyc").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+        return token;
+    }
+
+    private static String randomKey() {
+        byte[] key = new byte[32];
+        new SecureRandom().nextBytes(key);
+        return Base64.getEncoder().encodeToString(key);
     }
 
     @Autowired
