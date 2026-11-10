@@ -26,6 +26,8 @@ class SecurityConfig {
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.POST, "/api/core/auth/register", "/api/core/auth/login").permitAll()
                         .pathMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        // Stripe has no user token; core verifies Stripe's signature instead
+                        .pathMatchers(HttpMethod.POST, "/api/core/webhooks/stripe").permitAll()
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
                 .build();

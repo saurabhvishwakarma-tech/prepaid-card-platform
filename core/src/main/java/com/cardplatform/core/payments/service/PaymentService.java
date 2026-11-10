@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import java.time.Instant;
 
 import java.security.SecureRandom;
 import java.util.Optional;
@@ -44,15 +45,18 @@ public class PaymentService {
     private final NetworkOperationRepository operations;
     private final CardApi cards;
     private final LedgerApi ledger;
+    private final PaymentEventPublisher events;
     private final TransactionTemplate transactions;
     private final SecureRandom random = new SecureRandom();
 
     public PaymentService(AuthorizationRepository authorizations, NetworkOperationRepository operations,
-                          CardApi cards, LedgerApi ledger, TransactionTemplate transactions) {
+                          CardApi cards, LedgerApi ledger, PaymentEventPublisher events,
+                          TransactionTemplate transactions) {
         this.authorizations = authorizations;
         this.operations = operations;
         this.cards = cards;
         this.ledger = ledger;
+        this.events = events;
         this.transactions = transactions;
     }
 
@@ -87,6 +91,7 @@ public class PaymentService {
                     }
                     ledger.captureHold(authorization.getNetworkTxnId(), command.amount());
                     authorization.markCleared(command.amount().amountMinor());
+                    events.cleared(authorization, command.clearingId(), command.amount().amountMinor());
                     return OperationOutcome.ACCEPTED;
                 });
     }
@@ -101,6 +106,7 @@ public class PaymentService {
             }
             ledger.releaseHold(authorization.getNetworkTxnId());
             authorization.markReversed();
+            events.reversed(authorization, command.reversalId());
             return OperationOutcome.ACCEPTED;
         });
     }
@@ -122,11 +128,41 @@ public class PaymentService {
                     }
                     ledger.creditRefund(authorization.getAccountId(), command.refundId(), command.amount());
                     authorization.addRefund(command.amount().amountMinor());
+                    events.refunded(authorization, command.refundId(), command.amount().amountMinor());
                     return OperationOutcome.ACCEPTED;
                 });
     }
 
-    // Card checks, the ledger hold and the authorisation record commit together or not at all
+
+    // Approvals the network never cleared or reversed are released after the TTL, as card issuers do.
+    // This also frees holds left behind by a reversal that arrived before its authorisation was committed.
+    public int expireAuthorizationsBefore(Instant cutoff) {
+        int expired = 0;
+        for (Authorization stale : authorizations.findTop100ByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(
+                AuthorizationStatus.APPROVED, cutoff)) {
+            Boolean released = transactions.execute(status -> authorizations
+                    .findByNetworkTxnIdForUpdate(stale.getNetworkTxnId())
+                    // Checked again under the lock: a clearing may have arrived since the list was read
+                    .filter(authorization -> authorization.getStatus() == AuthorizationStatus.APPROVED)
+                    .map(this::expire)
+                    .orElse(false));
+            if (Boolean.TRUE.equals(released)) {
+                expired++;
+            }
+        }
+        return expired;
+    }
+
+    private boolean expire(Authorization authorization) {
+        ledger.releaseHold(authorization.getNetworkTxnId());
+        authorization.markReversed();
+        events.reversed(authorization, "expiry-" + authorization.getNetworkTxnId());
+        log.info("Authorization expired: networkTxnId={}, accountId={}, amountMinor={}",
+                authorization.getNetworkTxnId(), authorization.getAccountId(), authorization.getAmountMinor());
+        return true;
+    }
+
+    // Card checks, the ledger hold, the authorisation record and its event commit together or not at all
     private AuthorizationOutcome authorizeOnce(AuthorizeCommand command) {
         Optional<Authorization> existing = authorizations.findByNetworkTxnId(command.networkTxnId());
         if (existing.isPresent()) {
@@ -136,21 +172,19 @@ public class PaymentService {
         CardCheck check = cards.checkForPayment(command.pan(), command.expiryMonth(), command.expiryYear(),
                 command.amount(), command.mcc());
         if (!check.approved()) {
-            return save(Authorization.declined(command, check.cardId(), check.accountId(), check.category(),
-                    toPaymentReason(check.declineReason())));
+            return save(Authorization.declined(command, check, toPaymentReason(check.declineReason())));
         }
 
         HoldResult hold = ledger.placeHold(check.accountId(), command.networkTxnId(), command.amount());
         if (hold == HoldResult.INSUFFICIENT_FUNDS) {
-            return save(Authorization.declined(command, check.cardId(), check.accountId(), check.category(),
-                    PaymentDeclineReason.INSUFFICIENT_FUNDS));
+            return save(Authorization.declined(command, check, PaymentDeclineReason.INSUFFICIENT_FUNDS));
         }
-        return save(Authorization.approved(command, check.cardId(), check.accountId(), check.category(),
-                newAuthCode()));
+        return save(Authorization.approved(command, check, newAuthCode()));
     }
 
     private AuthorizationOutcome save(Authorization authorization) {
         authorizations.saveAndFlush(authorization);
+        events.authorizationDecided(authorization);
         log.info("Authorization {}: networkTxnId={}, accountId={}, amountMinor={}, declineReason={}",
                 authorization.getStatus(), authorization.getNetworkTxnId(), authorization.getAccountId(),
                 authorization.getAmountMinor(), authorization.getDeclineReason());

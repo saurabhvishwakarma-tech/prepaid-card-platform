@@ -124,6 +124,10 @@ public class Card {
         return id;
     }
 
+    public UUID getUserId() {
+        return userId;
+    }
+
     public UUID getAccountId() {
         return accountId;
     }

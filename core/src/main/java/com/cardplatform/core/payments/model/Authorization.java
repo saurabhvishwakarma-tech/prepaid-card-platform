@@ -1,6 +1,6 @@
-
 package com.cardplatform.core.payments.model;
 
+import com.cardplatform.core.card.api.CardCheck;
 import com.cardplatform.core.card.api.MerchantCategory;
 import com.cardplatform.core.payments.dto.AuthorizationOutcome;
 import com.cardplatform.core.payments.dto.AuthorizeCommand;
@@ -27,6 +27,8 @@ public class Authorization {
     private UUID cardId;
 
     private UUID accountId;
+
+    private UUID userId;
 
     private long amountMinor;
 
@@ -65,37 +67,35 @@ public class Authorization {
     protected Authorization() {
     }
 
-    public static Authorization approved(AuthorizeCommand command, UUID cardId, UUID accountId,
-                                         MerchantCategory category, String authCode) {
-        Authorization authorization = create(command, cardId, accountId, category);
+    public static Authorization approved(AuthorizeCommand command, CardCheck check, String authCode) {
+        Authorization authorization = create(command, check);
         authorization.status = AuthorizationStatus.APPROVED;
         authorization.authCode = authCode;
         return authorization;
     }
 
-    // cardId and accountId are null when the card number matched no card
-    public static Authorization declined(AuthorizeCommand command, UUID cardId, UUID accountId,
-                                         MerchantCategory category, PaymentDeclineReason reason) {
-        Authorization authorization = create(command, cardId, accountId, category);
+    // The card and account are unknown when the card number matched no card
+    public static Authorization declined(AuthorizeCommand command, CardCheck check, PaymentDeclineReason reason) {
+        Authorization authorization = create(command, check);
         authorization.status = AuthorizationStatus.DECLINED;
         authorization.declineReason = reason;
         return authorization;
     }
 
-    private static Authorization create(AuthorizeCommand command, UUID cardId, UUID accountId,
-                                        MerchantCategory category) {
+    private static Authorization create(AuthorizeCommand command, CardCheck check) {
         Authorization authorization = new Authorization();
         authorization.id = UUID.randomUUID();
         authorization.networkTxnId = command.networkTxnId();
-        authorization.cardId = cardId;
-        authorization.accountId = accountId;
+        authorization.cardId = check.cardId();
+        authorization.accountId = check.accountId();
+        authorization.userId = check.userId();
         authorization.amountMinor = command.amount().amountMinor();
         authorization.currency = command.amount().currency();
         authorization.merchantId = command.merchantId();
         authorization.merchantName = command.merchantName();
         authorization.mcc = command.mcc();
         authorization.merchantCountry = command.merchantCountry();
-        authorization.category = category;
+        authorization.category = check.category();
         authorization.createdAt = now();
         authorization.updatedAt = authorization.createdAt;
         return authorization;
@@ -136,8 +136,16 @@ public class Authorization {
         return networkTxnId;
     }
 
+    public UUID getCardId() {
+        return cardId;
+    }
+
     public UUID getAccountId() {
         return accountId;
+    }
+
+    public UUID getUserId() {
+        return userId;
     }
 
     public long getAmountMinor() {
@@ -148,11 +156,35 @@ public class Authorization {
         return currency;
     }
 
+    public String getMerchantId() {
+        return merchantId;
+    }
+
+    public String getMerchantName() {
+        return merchantName;
+    }
+
+    public String getMcc() {
+        return mcc;
+    }
+
+    public String getMerchantCountry() {
+        return merchantCountry;
+    }
+
+    public MerchantCategory getCategory() {
+        return category;
+    }
+
     public AuthorizationStatus getStatus() {
         return status;
     }
 
     public PaymentDeclineReason getDeclineReason() {
         return declineReason;
+    }
+
+    public String getAuthCode() {
+        return authCode;
     }
 }

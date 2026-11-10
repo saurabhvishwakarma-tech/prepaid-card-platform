@@ -6,6 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import com.cardplatform.core.payments.model.AuthorizationStatus;
+import java.time.Instant;
+import java.util.List;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -13,6 +16,9 @@ import java.util.UUID;
 public interface AuthorizationRepository extends JpaRepository<Authorization, UUID> {
 
     Optional<Authorization> findByNetworkTxnId(String networkTxnId);
+
+    List<Authorization> findTop100ByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(AuthorizationStatus status,
+                                                                                Instant before);
 
     // Clearing, reversal and refund of one authorisation must take turns
     @Lock(LockModeType.PESSIMISTIC_WRITE)

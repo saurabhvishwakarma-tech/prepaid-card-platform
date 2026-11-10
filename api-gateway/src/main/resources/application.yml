@@ -24,11 +24,36 @@ spring:
                     redis-rate-limiter.replenishRate: 1
                     redis-rate-limiter.burstCapacity: 5
                     redis-rate-limiter.requestedTokens: 1
+            # Stripe calls this without a user token; core checks Stripe's signature instead.
+            # Listed before the general core route, whose per-user limiter refuses requests with no user.
+            - id: stripe-webhooks
+              uri: ${cardplatform.gateway.core-uri}
+              predicates:
+                - Path=/api/core/webhooks/stripe
+                - Method=POST
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 50
+                    redis-rate-limiter.requestedTokens: 1
             # Everything else in core: limited per user
             - id: core
               uri: ${cardplatform.gateway.core-uri}
               predicates:
                 - Path=/api/core/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userKeyResolver}"
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+            - id: history
+              uri: ${cardplatform.gateway.history-uri}
+              predicates:
+                - Path=/api/history/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -44,5 +69,6 @@ server:
 cardplatform:
   gateway:
     core-uri: http://127.0.0.1:8081
+    history-uri: http://127.0.0.1:8082
     jwk-set-uri: http://127.0.0.1:8081/.well-known/jwks.json
     issuer: card-platform-core

@@ -43,15 +43,17 @@ public class LedgerService implements LedgerApi {
     private final JournalEntryRepository journalEntries;
     private final PostingRepository postings;
     private final AccountMapper accountMapper;
+    private final LedgerEventPublisher events;
 
     public LedgerService(AccountRepository accounts, HoldRepository holds,
                          JournalEntryRepository journalEntries, PostingRepository postings,
-                         AccountMapper accountMapper) {
+                         AccountMapper accountMapper, LedgerEventPublisher events) {
         this.accounts = accounts;
         this.holds = holds;
         this.journalEntries = journalEntries;
         this.postings = postings;
         this.accountMapper = accountMapper;
+        this.events = events;
     }
 
     @Override
@@ -181,6 +183,9 @@ public class LedgerService implements LedgerApi {
             requireSameCurrency(line.account().getCurrency(), currency);
             line.account().post(line.amount());
             postings.save(Posting.create(entry.getId(), line.account().getId(), line.amount(), currency));
+            if (line.account().isCustomer()) {
+                events.customerPosting(type, entry.getId(), line.account(), line.amount(), currency, reference);
+            }
         }
     }
 

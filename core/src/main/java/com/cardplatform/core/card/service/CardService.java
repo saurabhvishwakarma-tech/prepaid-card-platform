@@ -142,15 +142,15 @@ public class CardService implements CardApi {
         MerchantCategory category = MerchantCategories.fromMcc(mcc);
         Optional<Card> found = Luhn.isValid(pan) ? cards.findByPanHash(crypto.panHash(pan)) : Optional.empty();
         if (found.isEmpty()) {
-            return CardCheck.decline(null, null, category, CardDeclineReason.CARD_NOT_FOUND);
+            return CardCheck.decline(null, null, null, category, CardDeclineReason.CARD_NOT_FOUND);
         }
 
         Card card = found.get();
         CardDeclineReason reason = declineReason(card, expiryMonth, expiryYear, amount, category);
         if (reason != null) {
-            return CardCheck.decline(card.getId(), card.getAccountId(), category, reason);
+            return CardCheck.decline(card.getId(), card.getAccountId(), card.getUserId(), category, reason);
         }
-        return CardCheck.approve(card.getId(), card.getAccountId(), category);
+        return CardCheck.approve(card.getId(), card.getAccountId(), card.getUserId(), category);
     }
 
     private CardDeclineReason declineReason(Card card, int expiryMonth, int expiryYear, Money amount,

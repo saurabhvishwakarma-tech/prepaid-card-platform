@@ -94,7 +94,7 @@ public class NetworkMessageMapper {
                 : ProcessingResult.PROCESSING_RESULT_REJECTED;
     }
 
-    private static DeclineReason toProto(PaymentDeclineReason reason) {
+    public static DeclineReason toProto(PaymentDeclineReason reason) {
         return switch (reason) {
             case INSUFFICIENT_FUNDS -> DeclineReason.DECLINE_REASON_INSUFFICIENT_FUNDS;
             case CARD_NOT_FOUND -> DeclineReason.DECLINE_REASON_CARD_NOT_FOUND;

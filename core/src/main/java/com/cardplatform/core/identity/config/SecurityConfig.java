@@ -23,7 +23,8 @@ class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/core/auth/register", "/api/core/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/.well-known/jwks.json", "/actuator/health").permitAll()
-                        .requestMatchers("/error").permitAll()
+                        // Stripe has no user token; the webhook checks Stripe's signature instead
+                        .requestMatchers(HttpMethod.POST, "/api/core/webhooks/stripe").permitAll()                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));

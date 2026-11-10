@@ -17,6 +17,14 @@ spring:
       # The card network's API; REST stays on 8081
       port: 9090
       address: 127.0.0.1
+  kafka:
+    bootstrap-servers: 127.0.0.1:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # Events are Protobuf bytes, so no JSON or schema registry is involved
+      value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
+      # Wait until every in-sync replica has the message before the relay marks it published
+      acks: all
 
 server:
   port: 8081
@@ -37,3 +45,16 @@ cardplatform:
   network:
     client-id: ${NETWORK_CLIENT_ID}
     client-secret: ${NETWORK_CLIENT_SECRET}
+  outbox:
+    poll-interval: 500ms
+  stripe:
+    # Test-mode keys only; core refuses to start with a live key
+    secret-key: ${STRIPE_SECRET_KEY}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  funding:
+    reconcile-interval: 1m
+    # Long enough that the webhook normally gets there first
+    reconcile-after: 5m
+  payments:
+    authorization-ttl: 7d
+    expiry-check-interval: 1h

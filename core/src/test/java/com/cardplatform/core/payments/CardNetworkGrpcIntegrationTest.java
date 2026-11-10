@@ -1,5 +1,8 @@
 package com.cardplatform.core.payments;
 
+
+import com.cardplatform.contracts.events.v1.PaymentEvent;
+import com.cardplatform.core.shared.outbox.Topics;
 import com.cardplatform.contracts.common.v1.DeclineReason;
 import com.cardplatform.contracts.common.v1.Merchant;
 import com.cardplatform.contracts.network.v1.AuthorizationDecision;
@@ -44,6 +47,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import com.cardplatform.core.payments.service.PaymentService;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -58,6 +63,9 @@ class CardNetworkGrpcIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private LedgerApi ledger;
+
+    @Autowired
+    private PaymentService payments;
 
     private ManagedChannel channel;
 
@@ -181,6 +189,41 @@ class CardNetworkGrpcIntegrationTest extends IntegrationTestSupport {
         assertThat(tooMuch.getRejectReason()).isEqualTo(RejectReason.REJECT_REASON_AMOUNT_EXCEEDS_ALLOWED);
         assertBalances(cardholder, 3_500, 3_500);
     }
+
+    @Test
+    void authorisationAndClearingArePublishedForOtherServices() throws Exception {
+        Cardholder cardholder = fundedCardholder(5_000);
+        String txnId = txnId();
+        network().authorize(authorization(cardholder, txnId, 2_000));
+        network().clear(clear("clr-" + UUID.randomUUID(), txnId, 1_500));
+
+        PaymentEvent authorized = awaitEvent(Topics.PAYMENT_EVENTS, PaymentEvent.parser(),
+                e -> e.getNetworkTxnId().equals(txnId) && e.hasAuthorized());
+        PaymentEvent cleared = awaitEvent(Topics.PAYMENT_EVENTS, PaymentEvent.parser(),
+                e -> e.getNetworkTxnId().equals(txnId) && e.hasCleared());
+
+        assertThat(authorized.getAccountId()).isEqualTo(cardholder.accountId().toString());
+        assertThat(authorized.getUserId()).isNotBlank();
+        assertThat(authorized.getAuthorized().getAmount().getAmountMinor()).isEqualTo(2_000);
+        assertThat(cleared.getCleared().getClearedAmount().getAmountMinor()).isEqualTo(1_500);
+        assertThat(cleared.getCleared().getReleasedAmount().getAmountMinor()).isEqualTo(500);
+    }
+
+    @Test
+    void staleAuthorisationExpiresAndReleasesTheHold() throws Exception {
+        Cardholder cardholder = fundedCardholder(5_000);
+        String txnId = txnId();
+        network().authorize(authorization(cardholder, txnId, 2_000));
+        assertBalances(cardholder, 5_000, 3_000);
+
+        int expired = payments.expireAuthorizationsBefore(Instant.now().plusSeconds(1));
+
+        assertThat(expired).isPositive();
+        assertBalances(cardholder, 5_000, 5_000);
+        ClearResponse lateClearing = network().clear(clear("clr-" + UUID.randomUUID(), txnId, 2_000));
+        assertThat(lateClearing.getRejectReason()).isEqualTo(RejectReason.REJECT_REASON_INVALID_STATE);
+    }
+
 
     @Test
     void clearingAnUnknownAuthorisationIsRejected() {

@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-// Development only: puts test money on the caller's own account until Stripe top-ups arrive (Day 10).
+// Development only: instant test money without Stripe, for the load generator and quick demos.
+// Real top-ups go through Stripe (funding module).
 // The bean exists only when core runs with the "dev" profile, so the endpoint is absent everywhere else.
 @Profile("dev")
 @RestController

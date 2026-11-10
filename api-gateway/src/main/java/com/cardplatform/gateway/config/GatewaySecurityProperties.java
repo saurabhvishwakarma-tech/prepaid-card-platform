@@ -9,6 +9,7 @@ import org.springframework.validation.annotation.Validated;
 public record GatewaySecurityProperties(
         // Used by the routes in application.yml
         @NotBlank String coreUri,
+        @NotBlank String historyUri,
         @NotBlank String jwkSetUri,
         @NotBlank String issuer) {
 }
