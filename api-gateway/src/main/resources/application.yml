@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: api-gateway
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+  cloud:
+    gateway:
+      server:
+        # Gateway 5 reads routes from here; the old spring.cloud.gateway.routes is silently ignored
+        webflux:
+          routes:
+            # Listed first: the more specific path must match before the general core route.
+            # Sign-up and login have no user yet, so they are limited per client, strictly, to slow password guessing.
+            - id: core-auth
+              uri: ${cardplatform.gateway.core-uri}
+              predicates:
+                - Path=/api/core/auth/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 1
+                    redis-rate-limiter.burstCapacity: 5
+                    redis-rate-limiter.requestedTokens: 1
+            # Everything else in core: limited per user
+            - id: core
+              uri: ${cardplatform.gateway.core-uri}
+              predicates:
+                - Path=/api/core/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userKeyResolver}"
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+
+server:
+  port: 8080
+  address: 127.0.0.1
+
+cardplatform:
+  gateway:
+    core-uri: http://127.0.0.1:8081
+    jwk-set-uri: http://127.0.0.1:8081/.well-known/jwks.json
+    issuer: card-platform-core
