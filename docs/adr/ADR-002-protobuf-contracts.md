@@ -1,3 +1,7 @@
+# ADR-002: Protobuf contracts shared by gRPC and Kafka
+
+**Status:** Accepted (2026-11-05)
+
 ## Context
 Six apps exchange messages: the network simulator calls core over gRPC, and core publishes events that three services consume from Kafka. If each app defines its own copy of a message, the copies drift apart and break at runtime.
 

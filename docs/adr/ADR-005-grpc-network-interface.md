@@ -1,3 +1,7 @@
+# ADR-005: gRPC for the card network interface
+
+**Status:** Accepted (2026-11-10)
+
 ## Context
 The card network (our simulator) calls core to authorise, clear, reverse and refund card payments. It is an external, latency-critical caller: a real network waits a few hundred milliseconds, then retries or stands in for the issuer.
 

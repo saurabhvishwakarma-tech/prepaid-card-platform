@@ -1,3 +1,7 @@
+# ADR-004: Idempotency in Postgres; Redis for rate limiting only
+
+**Status:** Accepted (2026-11-07)
+
 ## Context
 Networks retry authorisations, Stripe resends webhooks, clients resend top-ups, and Kafka delivers at least once. Every money-moving operation will sometimes arrive twice, possibly at the same moment.
 

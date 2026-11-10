@@ -1,3 +1,7 @@
+# ADR-003: RS256 JWTs issued by core, verified through JWKS
+
+**Status:** Accepted (2026-11-07)
+
 ## Context
 Every request passes through the gateway, and core must also enforce roles per endpoint. Both need to trust the same tokens without a shared secret that could leak from either place.
 
