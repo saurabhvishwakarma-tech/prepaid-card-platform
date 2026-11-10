@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@AutoConfigureTestGrpcTransport
 public abstract class IntegrationTestSupport {
 
     protected static final String PASSWORD = "correct-horse-battery";
@@ -36,6 +38,8 @@ public abstract class IntegrationTestSupport {
     private static final String PAN_ENCRYPTION_KEY = randomKey();
     private static final String PAN_HASH_KEY = randomKey();
     private static final String CVV_KEY = randomKey();
+    protected static final String NETWORK_CLIENT_ID = "test-network";
+    protected static final String NETWORK_CLIENT_SECRET = randomKey();
 
     // One container for the whole test run; every test class shares it and the same Spring context
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18");
@@ -63,7 +67,8 @@ public abstract class IntegrationTestSupport {
         registry.add("cardplatform.card.pan-encryption-key", () -> PAN_ENCRYPTION_KEY);
         registry.add("cardplatform.card.pan-hash-key", () -> PAN_HASH_KEY);
         registry.add("cardplatform.card.cvv-key", () -> CVV_KEY);
-    }
+        registry.add("cardplatform.network.client-id", () -> NETWORK_CLIENT_ID);
+        registry.add("cardplatform.network.client-secret", () -> NETWORK_CLIENT_SECRET);    }
 
     protected String verifiedCustomerToken() throws Exception {
         String email = uniqueEmail();
