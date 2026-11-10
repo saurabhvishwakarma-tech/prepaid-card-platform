@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: network-simulator
+  config:
+    # Reads NETWORK_CLIENT_ID and NETWORK_CLIENT_SECRET from the repo's .env
+    import: optional:file:../.env[.properties]
+  grpc:
+    client:
+      channel:
+        core:
+          # 127.0.0.1, not localhost: core listens on IPv4 only, and localhost can resolve to IPv6 first
+          target: static://127.0.0.1:9090
+
+server:
+  port: 8085
+  address: 127.0.0.1
+
+simulator:
+  network:
+    client-id: ${NETWORK_CLIENT_ID}
+    client-secret: ${NETWORK_CLIENT_SECRET}
+    # How long the network waits for core before retrying; override with SIMULATOR_NETWORK_DEADLINE
+    deadline: 800ms
+    max-attempts: 3
+    retry-backoff: 100ms

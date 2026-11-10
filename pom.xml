@@ -20,6 +20,7 @@
     <modules>
         <module>contracts</module>
         <module>core</module>
+        <module>network-simulator</module>
     </modules>
 
     <properties>
