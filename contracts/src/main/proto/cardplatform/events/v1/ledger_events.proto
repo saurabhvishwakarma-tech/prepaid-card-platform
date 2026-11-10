@@ -23,6 +23,8 @@ message LedgerPostingEvent {
   cardplatform.common.v1.Money available_balance_after = 8;
   // Business ID that caused the entry: a top-up ID, network_txn_id or refund ID
   string reference = 9;
+  // Added after v1 was first used: a new field number, so older readers simply skip it
+  string user_id = 10;
 }
 
 enum EntryType {

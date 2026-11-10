@@ -22,6 +22,7 @@
         <module>core</module>
         <module>network-simulator</module>
         <module>api-gateway</module>
+        <module>transaction-history-service</module>
     </modules>
 
     <properties>

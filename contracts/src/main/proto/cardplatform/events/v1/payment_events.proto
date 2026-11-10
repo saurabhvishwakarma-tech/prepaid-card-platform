@@ -22,6 +22,8 @@ message PaymentEvent {
   string network_txn_id = 4;
   cardplatform.common.v1.Merchant merchant = 5;
   cardplatform.common.v1.MerchantCategory category = 6;
+  // Added after v1 was first used: a new field number, so older readers simply skip it
+  string user_id = 7;
 
   oneof event {
     PaymentAuthorized authorized = 10;
